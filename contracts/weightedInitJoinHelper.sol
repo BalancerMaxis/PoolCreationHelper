@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.6;
+pragma solidity 0.8.16;
 import "interfaces/balancer/vault/IVault.sol";
 import "interfaces/balancer/pool-weighted/IWeightedPoolFactoryV4.sol";
 import "interfaces/balancer/pool-stable/IComposableStableFactoryV4.sol";
@@ -17,11 +17,11 @@ import "interfaces/balancer/pool-stable/IComposableStablePool.sol";
 contract WeightedPoolInitHelper {
     IVault public immutable vault;
     IWeightedPoolFactoryV4 public immutable weightedFactory;
-    IComposableStablePoolFactoryV4 public immutable stableFactory;
+    IComposableStableFactoryV4 public immutable stableFactory;
     address public constant DAO = 0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B;
     uint256 public constant defaultTokenRateCacheDuration = 21600;
 
-    constructor(IVault _vault, IWeightedPoolFactoryV4 _weightedFactory, IComposableStablePool _stableFactory ) {
+    constructor(IVault _vault, IWeightedPoolFactoryV4 _weightedFactory, IComposableStableFactoryV4 _stableFactory ) {
         vault = _vault;
         weightedFactory = _weightedFactory;
         stableFactory = _stableFactory;
@@ -51,10 +51,10 @@ contract WeightedPoolInitHelper {
         uint256 swapFeeBPS,
         bytes32 somethingRandomForSalt
     ) public returns (address) {
-        address poolAddress = createWeightedPool(name, symbol, tokens, rateProviders,  weightsFrom100, swapFeeBPS, somethingRandomForSalt);
+        address poolAddress = createWeightedPool(name, symbol, tokens, rateProviders_supports_empty_list_to_default,  weightsFrom100, swapFeeBPS, somethingRandomForSalt);
         IWeightedPool pool = IWeightedPool(poolAddress);
         bytes32 poolId = pool.getPoolId();
-        initJoinWeightedPool(poolId, tokens, amountsPerToken);
+        initJoinWeightedPool(poolId, tokens, weiAmountsPerToken);
         return poolAddress;
     }
 
@@ -135,65 +135,61 @@ contract WeightedPoolInitHelper {
         require(RateProviders.length == len);
         // Transform Fees
         require(swapFeeBPS >=1  && swapFeeBPS <= 1000, "Fees must be between 0.01%(1 BPS) and 10%(1000 BPS)");
-        return  factory.create(name, symbol, tokens, weightsFrom100, RateProviders, swapFeeBPS * 10 ** 14, DAO, somethingRandomForSalt);
+        return  weightedFactory.create(name, symbol, tokens, weightsFrom100, RateProviders, swapFeeBPS * 10 ** 14, DAO, somethingRandomForSalt);
     }
 
 
-    // Stableswap
     /**
+      * @notice Easy Creation of a V4 stable swap pool - using the factory directly saves a little gas
      * @param name The Long Name of the pool token - Normally like Balancer B-33WETH-33WBTC-34USDC Token - MAX 67 characters if you want a gauge
      * @param symbol The symbol - Normally like B-33WETH-33WBTC-34USDC  - Max 40 characters if you want a gauge
-     * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions
-     * @param weightsFrom100 A list of token weights in percentage points ordered by the token addresses above (adds up to 100)
+     * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions.
+     * @param amplificationParameter Also known as the A factor.  Defines how fast the pool slips when off balance.  Recommend <50 if you don't know what you are doing.
      * @param exemptFees_supports_empty_list_to_default Speak with the Maxis about how to use this if your pool includes other boosted BPTs.  Otherwise set to an empty list
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
-     * @param amountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
+     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
      * @return The address of the created pool
    */
-    function CreateStablePool(
-        string memory name,
-        string memory symbol,
-        address[] memory tokens,
-        address[] memory rateProviders_supports_empty_list_to_default,
-        bool[] memory exemptFees_supports_empty_list_to_default,
-        uint256[] memory weiAmountsPerToken,
-        uint256 swapFeeBPS,
-        bytes32 somethingRandomForSalt
-    ) public returns (address) {
-        // Check Stuff
-        uint len = tokens.length;
-        require(len <= 5, "Stable pools can only spport max 5 tokens");
-        require(len == rateProviders.length || rateProviders.length == 0, "rateProviders  not same len as tokens or empty");
-        require(len == exemptFees_supports_empty_list_to_default || exemptFees_supports_empty_list_to_default.length == 0, "ExemptFees not same len as tokens or empty");
-        require(amplificationParameter > 1, "A Factor must be over 1");
-        require(amplificationParameter < 2000, "This interface does not support creating pools with A-factor over 2000, you can use the factory directly");
-        require(bytes(symbol).length <= 26, "Symbols with more than 26 characters break gauge creation");
-        require(bytes(symbol).length >= 6, "You can do better than that on the symbol name.  BPT-80XXX-20YYY");
-        require(bytes(name).length >= 10, "Use more than 10 characters and less than around 60 in your pool name");
+function CreateStablePool(
+    string memory name,
+    string memory symbol,
+    address[] memory tokens,
+    uint256 amplificationParameter,
+    address[] memory rateProviders_supports_empty_list_to_default,
+    bool[] memory exemptFees_supports_empty_list_to_default,
+    uint256[] memory weiAmountsPerToken,
+    uint256 swapFeeBPS,
+    bytes32 somethingRandomForSalt
+) public returns (address) {
+    // Check Stuff
+    uint len = tokens.length;
+    require(len <= 5, "Stable pools can only spport max 5 tokens");
+    require(len == rateProviders_supports_empty_list_to_default.length || rateProviders_supports_empty_list_to_default.length == 0, "rateProviders  not same len as tokens or empty");
+    require(len == exemptFees_supports_empty_list_to_default.length || exemptFees_supports_empty_list_to_default.length == 0, "ExemptFees not same len as tokens or empty");
+    require(amplificationParameter > 1, "A Factor must be over 1");
+    require(amplificationParameter < 2000, "This interface does not support creating pools with A-factor over 2000, you can use the factory directly");
+    require(bytes(symbol).length <= 26, "Symbols with more than 26 characters break gauge creation");
+    require(bytes(symbol).length >= 6, "You can do better than that on the symbol name.  BPT-80XXX-20YYY");
+    require(bytes(name).length >= 10, "Use more than 10 characters and less than around 60 in your pool name");
 
 
-        // pack tokenRateCacheDurations with default
-        uint256[] memory tokenRateCacheDurations = tokens.lentgh ;
-        for (uint i; i < tokenRateCacheDurations.length; ++i) myArray[i] = defaultTokenRateCacheDuration;
+    // pack tokenRateCacheDurations with default
+    uint256[] memory tokenRateCacheDurations = new uint256[](tokens.length);
+    for (uint i; i < tokenRateCacheDurations.length; ++i) tokenRateCacheDurations[i] = defaultTokenRateCacheDuration;
 
-        // Handle fees empty list default
-        if(exemptFees_supports_empty_list_to_default.length == 0){
-            bool[] memory exemptFees_supports_empty_list_to_default = new bool[](tokens.length);
-        }
-
-        // Replace empty array with zeroed out rate providers
-        bool emptyRateProviders = rateProviders_supports_empty_list_to_default.length == 0;
-        address[] memory RateProviders = new address[](len);
-        if(!emptyRateProviders){
-            RateProviders = rateProviders_supports_empty_list_to_default;
-        }
-
-        require(RateProviders.length == len);
-        // Transform Fees
-        require(swapFeeBPS >=1  && swapFeeBPS <= 1000, "Fees must be between 0.01%(1 BPS) and 10%(1000 BPS)");
-        return  stableFactory.create(name, symbol, tokens, amplificationParameter, RateProviders, tokenRateCacheDurations, exemptFees_supports_empty_list_to_default, swapFeeBPS * 10 ** 14, DAO, somethingRandomForSalt);
+    // Handle fees empty list default
+    if(exemptFees_supports_empty_list_to_default.length == 0){
+        exemptFees_supports_empty_list_to_default = new bool[](tokens.length);
     }
+
+    // Use rateProviders_supports_empty_list_to_default if not empty
+    require(rateProviders_supports_empty_list_to_default.length == len);
+    // Transform Fees
+    require(swapFeeBPS >=1  && swapFeeBPS <= 1000, "Fees must be between 0.01%(1 BPS) and 10%(1000 BPS)");
+    return  stableFactory.create(name, symbol, tokens, amplificationParameter, rateProviders_supports_empty_list_to_default, tokenRateCacheDurations, exemptFees_supports_empty_list_to_default, swapFeeBPS * 10 ** 14, DAO, somethingRandomForSalt);
+}
+
 
         /**
       * @notice Init Joins an empty pool to set the starting price
@@ -202,8 +198,8 @@ contract WeightedPoolInitHelper {
      * @param amountsPerToken a list of amounts such that a matching index returns a token/amount pair - Can use zero for own BPT
      */
     function initJoinStableSwap(
-        address poolId,
-        bytes32 poolAddress,
+        bytes32 poolId,
+        address poolAddress,
         address[] memory tokenAddresses,
         uint256[] memory amountsPerToken
     ) public {
@@ -212,7 +208,7 @@ contract WeightedPoolInitHelper {
         bool foundOwnToken;
 
         for(uint8 i=0; i<tokenAddresses.length;){
-            if (tokenAddresses[i] = poolAddress){
+            if (tokenAddresses[i] == poolAddress){
                 amountsPerToken[i] = 2**111;
                 foundOwnToken = true;
             }
@@ -275,7 +271,7 @@ contract WeightedPoolInitHelper {
     return (addresses, amounts);
     }
 
-    function sortWeightedCreateDataByAddress(address[] memory addresses, address[] memory rateProviders, uint256[] memory amounts, uint256[] memory weights) public pure returns (address[] memory, uint256[] memory, uint256[] memory) {
+    function sortWeightedCreateDataByAddress(address[] memory addresses, address[] memory rateProviders, uint256[] memory amounts, uint256[] memory weights) public pure returns (address[] memory, address[] memory, uint256[] memory, uint256[] memory) {
     uint256 n = addresses.length;
     for (uint256 i = 0; i < n - 1; i++) {
         for (uint256 j = 0; j < n - i - 1; j++) {
