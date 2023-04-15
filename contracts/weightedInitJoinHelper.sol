@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.16;
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "interfaces/balancer/vault/IVault.sol";
 import "interfaces/balancer/pool-weighted/IWeightedPoolFactoryV4.sol";
 import "interfaces/balancer/pool-stable/IComposableStableFactoryV4.sol";
@@ -14,17 +15,20 @@ import "interfaces/balancer/pool-stable/IComposableStablePool.sol";
  * @author tritium.eth
  * @notice This contract attempts to make creating and initializing a pool easier from etherscan.
  */
-contract WeightedPoolInitHelper {
+contract WeightedPoolInitHelper is Ownable {
     IVault public immutable vault;
-    IWeightedPoolFactoryV4 public immutable weightedFactory;
-    IComposableStableFactoryV4 public immutable stableFactory;
+    IWeightedPoolFactoryV4 public  weightedFactory;
+    IComposableStableFactoryV4 public  stableFactory;
     address public constant DAO = 0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B;
     uint256 public constant defaultTokenRateCacheDuration = 21600;
 
+    event FactoryChange(address newWeightedPool, address newStablePoolFactory);
+
     constructor(IVault _vault, IWeightedPoolFactoryV4 _weightedFactory, IComposableStableFactoryV4 _stableFactory ) {
-        vault = _vault;
         weightedFactory = _weightedFactory;
         stableFactory = _stableFactory;
+        vault = _vault;
+        emit FactoryChange(address(weightedFactory), address(stableFactory));
     }
 
 
@@ -239,6 +243,26 @@ function CreateStablePool(
         }
         vault.joinPool(poolId, address(this), msg.sender, request);
     }
+
+
+    /// Admin Functions
+          /**
+   * @notice Sweep the full contract's balance for a given ERC-20 token (save tokens that somehow ended up in here)
+   * @param token The ERC-20 token which needs to be swept
+   * @param payee The address to pay
+   */
+    function sweep(address token, address payee) external onlyOwner {
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).transfer(payee, balance);
+    }
+
+    function changeFactories(IWeightedPoolFactoryV4 _weightedFactory, IComposableStableFactoryV4 _stableFactory) external onlyOwner {
+        IWeightedPoolFactoryV4 weightedFactory = _weightedFactory;
+        IComposableStableFactoryV4 stableFactory = _stableFactory;
+        emit FactoryChange(address(weightedFactory), address(stableFactory));
+    }
+
+    /// Sort Helpers
 
     /**
      * @notice Converts an array of token addresses to an array of IAsset objects
