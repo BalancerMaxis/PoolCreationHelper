@@ -25,4 +25,3 @@ stableFactory = monorepoLookup("20230320-composable-stable-pool-v4", "Composable
 helper = PoolCreationHelper.deploy(vault, weightedFactory, stableFactory, {"from": account})
 PoolCreationHelper.publish_source(PoolCreationHelper[0])
 
-
