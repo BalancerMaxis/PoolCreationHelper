@@ -1,5 +1,5 @@
 import requests
-from brownie import chain, PoolCreationHelper, accounts
+from brownie import chain, PoolCreationHelper, accounts, Contract
 
 account = accounts.load("dd_PoolCreation")
 BALANCER_DEPLOYMENTS_URL = "https://raw.githubusercontent.com/balancer-labs/balancer-v2-monorepo/master/pkg/deployments"
