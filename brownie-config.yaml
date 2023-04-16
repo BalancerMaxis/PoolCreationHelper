@@ -1,7 +1,15 @@
 autofetch_sources: True
 
 networks:
-  default: mainnet-fork
+  tenderly-mainnet:
+      host: https://rpc.vnet.tenderly.co/devnet/latest-fork/4a2d4350-942c-45d3-aeea-166a48ca1416
+      chainid: 1
+      gas_price: auto
+      explorer: https://api.etherscan.io/api
+      multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+      accounts:
+        - axHGL2gbX7YRVviPKPb3-g5yO74L11MpK
+
 
 dotenv: .env
 
@@ -12,3 +20,4 @@ compiler:
     solc:
         remappings:
           - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.8.2"
+

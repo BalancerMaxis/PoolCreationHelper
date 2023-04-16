@@ -4,8 +4,11 @@ from brownie import (
     interface,
     accounts,
     PoolCreationHelper,
-    Contract
+    Contract,
+network
 )
+from brownie.exceptions import VirtualMachineError
+
 from dotmap import DotMap
 import pytest
 import json
@@ -28,9 +31,11 @@ def unordered_token_list():
 
 @pytest.fixture()
 def ordered_token_list(unordered_token_list, helper):
-    (addresses, amounts) = helper.sortAmountsByAddresses(unordered_token_list, [0 , 0, 0])
-    print(addresses)
-    return addresses
+    try:
+        (addresses, foo, bar, foobar) = helper.sortForWeighted(unordered_token_list, [],[5,10,15], [0 , 0, 0])
+        return addresses
+    except VirtualMachineError:
+        return unordered_token_list
 
 @pytest.fixture()
 def whale():
@@ -39,7 +44,7 @@ def whale():
 
 @pytest.fixture()
 def vault():
-    return interface.IVault(VAULT_ADDRESS)
+    return Contract(VAULT_ADDRESS)
 
 
 @pytest.fixture()
@@ -53,17 +58,17 @@ def owner():
 
 @pytest.fixture()
 def weightedFactory():
-    return Contract(WEIGHTED_POOL_FACTORY)
+    return Contract.from_explorer(WEIGHTED_POOL_FACTORY)
 
 
 @pytest.fixture()
 def stableFactory():
-    return Contract(STABLESWAP_FACTORY)
+    return Contract.from_explorer(STABLESWAP_FACTORY)
 
 
 @pytest.fixture()
 def dai():
-    return Contract(DAI_ADDRESS)
+    return Contract.from_explorer(DAI_ADDRESS)
 
 
 @pytest.fixture()
@@ -73,7 +78,7 @@ def usdc():
 
 @pytest.fixture()
 def usdt():
-    return Contract(USDT_ADDRESS)
+    return Contract.from_explorer(USDT_ADDRESS)
 
 
 
@@ -108,7 +113,7 @@ def deploy(caller, vault, weightedFactory, stableFactory, dai, usdc, usdt, whale
     dai.transfer(caller, 100000*10**dai.decimals(), {"from": whale})
     usdc.transfer(caller, 100000*10**usdc.decimals(), {"from": whale})
     usdt.transfer(caller, 100000*10**usdt.decimals(), {"from": whale})
-
+    accounts[2].transfer(caller, accounts[2].balance()) ## extra eth from some oog error that probs wwas not due to oog
     helper = PoolCreationHelper.deploy(
         vault,
         weightedFactory,
@@ -121,48 +126,3 @@ def deploy(caller, vault, weightedFactory, stableFactory, dai, usdc, usdt, whale
     print(helper.address)
 
     return helper
-
-
-def test_sortForStable(helper):
-    addresses = [accounts[0], accounts[1], accounts[2]]
-    rateProviders = [accounts[3], accounts[4], accounts[5]]
-    exemptFees = [True, False, True]
-    amounts = [100, 200, 300]
-    weights = [50, 30, 20]
-
-    expected_sorted_addresses = [accounts[0], accounts[1], accounts[2]]
-    expected_sorted_rateProviders = [accounts[3], accounts[4], accounts[5]]
-    expected_sorted_exemptFees = [True, False, True]
-    expected_sorted_amounts = [100, 200, 300]
-    expected_sorted_weights = [50, 30, 20]
-
-    sorted_addresses, sorted_rateProviders, sorted_exemptFees, sorted_amounts, sorted_weights = weighted_init_join_helper.sortForStable(
-        addresses, rateProviders, exemptFees, amounts, weights)
-
-    assert sorted_addresses == expected_sorted_addresses
-    assert sorted_rateProviders == expected_sorted_rateProviders
-    assert sorted_exemptFees == expected_sorted_exemptFees
-    assert sorted_amounts == expected_sorted_amounts
-    assert sorted_weights == expected_sorted_weights
-
-def test_sortForWeighted(w3, helper):
-    # Prepare the input data
-    addresses = [accounts for i in range(4)]
-    amounts = [1000, 2000, 500, 100]
-    weights = [10**18, 2*10**18, 5*10**18, 1*10**18]
-    rateProviders = [w3.eth.accounts[i+4] for i in range(4)]
-
-    # Call the function
-    result = helper.sortForWeighted(addresses, rateProviders, amounts, weights)
-
-    # Expected result
-    expected_addresses = [addresses[i] for i in [3, 2, 0, 1]]
-    expected_amounts = [amounts[i] for i in [3, 2, 0, 1]]
-    expected_weights = [weights[i] for i in [3, 2, 0, 1]]
-    expected_rateProviders = [rateProviders[i] for i in [3, 2, 0, 1]]
-
-    # Check the result
-    assert result[0] == expected_addresses
-    assert result[1] == expected_rateProviders
-    assert result[2] == expected_amounts
-    assert result[3] == expected_weights

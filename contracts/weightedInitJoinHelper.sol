@@ -35,11 +35,10 @@ contract PoolCreationHelper is Ownable {
 
         
     struct StablePoolData {
-        address poolAddress;
+        address addr;
         address rateProvider;
         bool exemptFees;
         uint256 amount;
-        uint256 weight;
     }
     
     struct WeightedPoolData {
@@ -49,8 +48,42 @@ contract PoolCreationHelper is Ownable {
         address rateProvider;
     }
 
-
-
+    /**
+      * @notice Easy and complete of a V4 stable swap pool - using the factory directly saves a little gas
+     * @param name The Long Name of the pool token - Normally like Balancer B-33WETH-33WBTC-34USDC Token - MAX 67 characters if you want a gauge
+     * @param symbol The symbol - Normally like B-33WETH-33WBTC-34USDC  - Max 40 characters if you want a gauge
+     * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions.
+     * @param amplificationParameter Also known as the A factor.  Defines how fast the pool slips when off balance.  Recommend <50 if you don't know what you are doing.
+     * @param exemptFees_supports_empty_list_to_default Speak with the Maxis about how to use this if your pool includes other boosted BPTs.  Otherwise set to an empty list
+     * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
+     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
+     * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
+     * @return The address of the created pool
+   */
+    function createAndJoinStableSwap (
+        string memory name,
+        string memory symbol,
+        address[] memory tokens,
+        uint256 amplificationParameter,
+        address[] memory rateProviders_supports_empty_list_to_default,
+        bool[] memory exemptFees_supports_empty_list_to_default,
+        uint256[] memory weiAmountsPerToken,
+        uint256 swapFeeBPS,
+        bytes32 somethingRandomForSalt
+    ) public returns (address) {
+        address poolAddress = createStablePool(name,
+            symbol,
+            tokens,
+            amplificationParameter,
+            rateProviders_supports_empty_list_to_default,
+            exemptFees_supports_empty_list_to_default,
+            swapFeeBPS,
+            somethingRandomForSalt);
+        IComposableStablePool pool = IComposableStablePool(poolAddress);
+        bytes32 poolId = pool.getPoolId();
+        initJoinStableSwap(poolId, address(pool), tokens, weiAmountsPerToken);
+        return poolAddress;
+    }
     /**
      * @notice Easy Creation of a V4 weighted pool - using the factory directly saves a little gas
      * @param name The Long Name of the pool token - Normally like Balancer B-33WETH-33WBTC-34USDC Token - MAX 67 characters if you want a gauge
@@ -296,59 +329,44 @@ contract PoolCreationHelper is Ownable {
     }
 
 
-    function sortAmountsByAddresses(address[] memory addresses, uint256[] memory amounts) public pure returns (address[] memory, uint256[] memory) {
-    uint256 n = addresses.length;
-    for (uint256 i = 0; i < n - 1; i++) {
-        for (uint256 j = 0; j < n - i - 1; j++) {
-            if (addresses[j] > addresses[j + 1]) {
-                address tempAddress = addresses[j];
-                addresses[j] = addresses[j + 1];
-                addresses[j + 1] = tempAddress;
-                uint256 tempAmount = amounts[j];
-                amounts[j] = amounts[j + 1];
-                amounts[j + 1] = tempAmount;
-            }
-        }
-    }
-    return (addresses, amounts);
-    }
-
 function sortForWeighted(address[] memory addresses, address[] memory rateProviders, uint256[] memory amounts, uint256[] memory weights) public pure returns (address[] memory, address[] memory, uint256[] memory, uint256[] memory) {
-    uint8 n = uint8(addresses.length);
+    uint256 n = addresses.length;
+    if (rateProviders.length == 0) {
+        rateProviders = new address[](n);
+    }
     WeightedPoolData[] memory data = new WeightedPoolData[](n);
-    for (uint8 i = 0; i < n; i++) {
+    for (uint256 i = 0; i < n; i++) {
         data[i] = WeightedPoolData(addresses[i], amounts[i], weights[i], rateProviders[i]);
     }
-    for (uint8 i = 0; i < n - 1; i++) {
-        for (uint8 j = 0; j < n - i - 1; j++) {
+    for (uint256 i = 0; i < n - 1; i++) {
+        for (uint256 j = 0; j < n - i - 1; j++) {
             if (data[j].addr > data[j + 1].addr) {
-                WeightedPoolData memory temp = data[j];
+                WeightedPoolData memory tempData = data[j];
                 data[j] = data[j + 1];
-                data[j + 1] = temp;
+                data[j + 1] = tempData;
             }
         }
     }
     for (uint8 i = 0; i < n; i++) {
-        addresses[i] = data[i].addr;
         amounts[i] = data[i].amount;
         weights[i] = data[i].weight;
         rateProviders[i] = data[i].rateProvider;
+        addresses[i] = data[i].addr;
     }
     return (addresses, rateProviders, amounts, weights);
 }
+
 
 
     function sortForStable(
         address[] memory addresses,
         address[] memory rateProviders,
         bool[] memory exemptFees,
-        uint256[] memory amounts,
-        uint256[] memory weights
+        uint256[] memory amounts
     ) public pure returns (
         address[] memory,
         address[] memory,
         bool[] memory,
-        uint256[] memory,
         uint256[] memory
     ) {
         uint256 n = addresses.length;
@@ -361,16 +379,15 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
         StablePoolData[] memory data = new StablePoolData[](n);
         for (uint256 i = 0; i < n; i++) {
             data[i] = StablePoolData({
-                poolAddress: addresses[i],
+                addr: addresses[i],
                 rateProvider: rateProviders[i],
                 exemptFees: exemptFees[i],
-                amount: amounts[i],
-                weight: weights[i]
+                amount: amounts[i]
             });
         }
         for (uint256 i = 0; i < n - 1; i++) {
             for (uint256 j = 0; j < n - i - 1; j++) {
-                if (data[j].poolAddress > data[j + 1].poolAddress) {
+                if (data[j].addr > data[j + 1].addr) {
                     StablePoolData memory tempData = data[j];
                     data[j] = data[j + 1];
                     data[j + 1] = tempData;
@@ -378,13 +395,11 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
             }
         }
         for (uint256 i = 0; i < n; i++) {
-            addresses[i] = data[i].poolAddress;
+            addresses[i] = data[i].addr;
             rateProviders[i] = data[i].rateProvider;
             exemptFees[i] = data[i].exemptFees;
             amounts[i] = data[i].amount;
-            weights[i] = data[i].weight;
         }
-        return (addresses, rateProviders, exemptFees, amounts, weights);
+        return (addresses, rateProviders, exemptFees, amounts);
     }
-
 }
