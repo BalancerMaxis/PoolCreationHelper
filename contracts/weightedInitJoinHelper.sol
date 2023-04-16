@@ -58,6 +58,7 @@ contract PoolCreationHelper is Ownable {
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
      * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
+     * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc©©
      * @return The address of the created pool
    */
     function createAndJoinStableSwap (
@@ -93,6 +94,7 @@ contract PoolCreationHelper is Ownable {
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
      * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
+     * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc
      * @return The address of the created pool
     */
     function createAndJoinWeightedPool(
@@ -155,6 +157,7 @@ contract PoolCreationHelper is Ownable {
      * @param weightsFrom100 A list of token weights in percentage points ordered by the token addresses above (adds up to 100)
      * @param rateProviders A list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
      * @param swapFeeBPS The swap fee expressed in basis ponts from 1 to 1000 (0.01 - 10%)
+     * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc
      * @return The address of the created pool
     */
     function createWeightedPool(
@@ -202,6 +205,7 @@ contract PoolCreationHelper is Ownable {
      * @param exemptFees_supports_empty_list_to_default Speak with the Maxis about how to use this if your pool includes other boosted BPTs.  Otherwise set to an empty list
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
+     * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc
      * @return The address of the created pool
    */
     function createStablePool(
@@ -262,15 +266,18 @@ contract PoolCreationHelper is Ownable {
         /// TODO consider a check around balanced deposits
         bool foundOwnToken;
 
-        for(uint8 i=0; i<tokenAddresses.length;){
+        for(uint8 i=0; i<tokenAddresses.length; i++){
             if (tokenAddresses[i] == poolAddress){
                 weiAmountsPerToken[i] = 2**111;
                 foundOwnToken = true;
             }
         }
 
-        require(foundOwnToken, "You must include the address of the pools own BPT in the sorted list of addresses.  You can set it's amount to 0");
-
+        if(!foundOwnToken){
+            tokenAddresses = appendAddress(tokenAddresses, poolAddress);
+            weiAmountsPerToken = appendAmount(weiAmountsPerToken, 2**111);
+            (tokenAddresses, weiAmountsPerToken) = sortAmountsByAddresses(tokenAddresses, weiAmountsPerToken);
+        }
         IAsset[] memory tokens = toIAssetArray(tokenAddresses);
 
         // The 0 as the first argument represents an init join
@@ -329,14 +336,23 @@ contract PoolCreationHelper is Ownable {
     }
 
 
-function sortForWeighted(address[] memory addresses, address[] memory rateProviders, uint256[] memory amounts, uint256[] memory weights) public pure returns (address[] memory, address[] memory, uint256[] memory, uint256[] memory) {
-    uint256 n = addresses.length;
+    /**
+      * @notice Sort function for stable create
+     * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions.
+     * @param rateProviders  An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
+     * @param amounts The amounts per token for the init join to set initial price
+     * @param weights The weights per token of the pool, adding up to 100
+     * @return All the lists sorted together.
+   */
+
+function sortForWeighted(address[] memory tokens, address[] memory rateProviders, uint256[] memory amounts, uint256[] memory weights) public pure returns (address[] memory, address[] memory, uint256[] memory, uint256[] memory) {
+    uint256 n = tokens.length;
     if (rateProviders.length == 0) {
         rateProviders = new address[](n);
     }
     WeightedPoolData[] memory data = new WeightedPoolData[](n);
     for (uint256 i = 0; i < n; i++) {
-        data[i] = WeightedPoolData(addresses[i], amounts[i], weights[i], rateProviders[i]);
+        data[i] = WeightedPoolData(tokens[i], amounts[i], weights[i], rateProviders[i]);
     }
     for (uint256 i = 0; i < n - 1; i++) {
         for (uint256 j = 0; j < n - i - 1; j++) {
@@ -351,15 +367,22 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
         amounts[i] = data[i].amount;
         weights[i] = data[i].weight;
         rateProviders[i] = data[i].rateProvider;
-        addresses[i] = data[i].addr;
+        tokens[i] = data[i].addr;
     }
-    return (addresses, rateProviders, amounts, weights);
+    return (tokens, rateProviders, amounts, weights);
 }
 
 
-
+    /**
+      * @notice Sort function for stable create
+     * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions.
+     * @param rateProviders An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
+     * @param exemptFees Speak with the Maxis about how to use this if your pool includes other boosted BPTs.  Otherwise set to an empty list
+     * @param amounts The amounts per token for the init join to set initial price
+     * @return All the lists sorted together.
+   */
     function sortForStable(
-        address[] memory addresses,
+        address[] memory tokens,
         address[] memory rateProviders,
         bool[] memory exemptFees,
         uint256[] memory amounts
@@ -369,7 +392,7 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
         bool[] memory,
         uint256[] memory
     ) {
-        uint256 n = addresses.length;
+        uint256 n = tokens.length;
         if (rateProviders.length == 0) {
             rateProviders = new address[](n);
         }
@@ -379,7 +402,7 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
         StablePoolData[] memory data = new StablePoolData[](n);
         for (uint256 i = 0; i < n; i++) {
             data[i] = StablePoolData({
-                addr: addresses[i],
+                addr: tokens[i],
                 rateProvider: rateProviders[i],
                 exemptFees: exemptFees[i],
                 amount: amounts[i]
@@ -395,11 +418,51 @@ function sortForWeighted(address[] memory addresses, address[] memory rateProvid
             }
         }
         for (uint256 i = 0; i < n; i++) {
-            addresses[i] = data[i].addr;
+            tokens[i] = data[i].addr;
             rateProviders[i] = data[i].rateProvider;
             exemptFees[i] = data[i].exemptFees;
             amounts[i] = data[i].amount;
         }
-        return (addresses, rateProviders, exemptFees, amounts);
+        return (tokens, rateProviders, exemptFees, amounts);
     }
+
+    function sortAmountsByAddresses(address[] memory addresses, uint256[] memory amounts) public pure returns (address[] memory, uint256[] memory) {
+    uint256 n = addresses.length;
+    for (uint256 i = 0; i < n - 1; i++) {
+        for (uint256 j = 0; j < n - i - 1; j++) {
+            if (addresses[j] > addresses[j + 1]) {
+                address tempAddress = addresses[j];
+                addresses[j] = addresses[j + 1];
+                addresses[j + 1] = tempAddress;
+                uint256 tempAmount = amounts[j];
+                amounts[j] = amounts[j + 1];
+                amounts[j + 1] = tempAmount;
+            }
+        }
+    }
+    return (addresses, amounts);
+    }
+function appendAddress(address[] memory addressArray, address newAddress) private pure returns (address[] memory) {
+    uint256 length = addressArray.length;
+    address[] memory newArray = new address[](length + 1);
+    for (uint256 i = 0; i < length; i++) {
+        newArray[i] = addressArray[i];
+    }
+    newArray[length] = newAddress;
+    return newArray;
 }
+
+
+function appendAmount(uint256[] memory amountArray, uint256 newAmount) private pure returns (uint256[] memory) {
+    uint256 length = amountArray.length;
+    uint256[] memory newArray = new uint256[](length + 1);
+    for (uint256 i = 0; i < length; i++) {
+        newArray[i] = amountArray[i];
+    }
+    newArray[length] = newAmount;
+    return newArray;
+}
+}
+
+
+

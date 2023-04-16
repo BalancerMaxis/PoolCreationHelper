@@ -54,12 +54,11 @@ def test_weighted_init_join(helper, dai, usdc, usdt, weightedPool, caller):
 def test_stable_init_join(helper, dai, usdc, usdt, stablePool, caller):
     ## Tokens approved in conftest
     tokens = [usdc, usdt, dai]
-    amounts = [10000000, 1000000, 1000]
+    amounts = [1000, 1100, 1050]
     exempt = [False, False, False]
-    sortTokens, rateProviders, exemptFees, sortAmounts = helper.sortForStable(tokens, [], amounts)
+    sortTokens, rateProviders, exemptFees, sortAmounts = helper.sortForStable(tokens, [], exempt, amounts)
     print(sortTokens, sortAmounts)
     tx = helper.initJoinStableSwap(stablePool.getPoolId(), stablePool.address, sortTokens, sortAmounts, {'from': caller})
-    assert stablePool.balanceOf(caller) > 0
     assert stablePool.balanceOf(caller) > 0
     return tx
 
@@ -75,8 +74,8 @@ def test_create_and_join_stable(helper, caller, unordered_token_list):
     ## approvals for usdt, usdc and dai in conftest
 
     amounts = [234235, 234000, 233000]
-    sortTokens, rateProviders, sortAmounts, weights = helper.sortForWeighted(unordered_token_list, [], amounts, [25, 40, 35])
-    tx = helper.createAndJoinStableSwap("stable 3 pool for arbs", "B-stable-3pool", sortTokens, 100, [], [], sortAmounts, 300, b"how 'bout some pepper?", {"from": caller})
+    sortTokens, rateProviders, exemptFees, sortAmounts = helper.sortForStable(unordered_token_list, [],  [], amounts)
+    tx = helper.createAndJoinStableSwap("stable 3 pool for arbs", "B-stable-3pool", sortTokens, 100, rateProviders, exemptFees, sortAmounts, 300, b"how 'bout some pepper?", {"from": caller})
     return tx
 
 def test_2_pools_same_salt(ordered_token_list, caller, weightedFactory, helper, dai, usdc):
