@@ -1,1 +1,218 @@
-{"version":"1.0","chainId":"42161","createdAt":1681670295916,"meta":{"name":"Transactions Batch","description":"","txBuilderVersion":"1.13.3","createdFromSafeAddress":"0xd69F1FB046726034cdE6d282371d92548C62bbE4","createdFromOwnerAddress":"","checksum":"0xf707c4ae483a57ecedcccaba5d20e88f9794c812e56d1dc7eb4052cd40bd10f3"},"transactions":[{"to":"0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1","value":"0","data":null,"contractMethod":{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","payable":false},"contractInputsValues":{"spender":"0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04","value":"1000000000000000000000000"}},{"to":"0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A","value":"0","data":null,"contractMethod":{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","payable":false},"contractInputsValues":{"spender":"0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04","value":"10000000000000000000000"}},{"to":"0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F","value":"0","data":null,"contractMethod":{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","payable":false},"contractInputsValues":{"spender":"0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04","amount":"1000000000000000000000"}},{"to":"0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04","value":"0","data":null,"contractMethod":{"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"},{"internalType":"address[]","name":"tokens","type":"address[]"},{"internalType":"uint256","name":"amplificationParameter","type":"uint256"},{"internalType":"address[]","name":"rateProviders_supports_empty_list_to_default","type":"address[]"},{"internalType":"bool[]","name":"exemptFees_supports_empty_list_to_default","type":"bool[]"},{"internalType":"uint256[]","name":"weiAmountsPerToken","type":"uint256[]"},{"internalType":"uint256","name":"swapFeeBPS","type":"uint256"},{"internalType":"bytes32","name":"somethingRandomForSalt","type":"bytes32"}],"name":"createAndJoinStableSwap","payable":false},"contractInputsValues":{"name":"Balancer MIM/FRAX/DAI stableswap","symbol":"b-s-MIM-FRAX-DAI","tokens":"[0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F, 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1, 0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A]","amplificationParameter":"40","rateProviders_supports_empty_list_to_default":"[]","exemptFees_supports_empty_list_to_default":"[]","weiAmountsPerToken":"[9000000000000000000, 9000000000000000000, 9000000000000000000]","swapFeeBPS":"10","somethingRandomForSalt":"0x123456"}},{"to":"0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04","value":"0","data":null,"contractMethod":{"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"},{"internalType":"address[]","name":"tokens","type":"address[]"},{"internalType":"address[]","name":"rateProviders_supports_empty_list_to_default","type":"address[]"},{"internalType":"uint256[]","name":"weiAmountsPerToken","type":"uint256[]"},{"internalType":"uint256[]","name":"weightsFrom100","type":"uint256[]"},{"internalType":"uint256","name":"swapFeeBPS","type":"uint256"},{"internalType":"bytes32","name":"somethingRandomForSalt","type":"bytes32"}],"name":"createAndJoinWeightedPool","payable":false},"contractInputsValues":{"name":"Balancer MIM33/FRAX33/DAI34","symbol":"b-MIM33-FRAX33-DAI34","tokens":"[0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F, 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1, 0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A]","rateProviders_supports_empty_list_to_default":"[]","weiAmountsPerToken":"[9000000000000000000, 9000000000000000000, 9000000000000000000]","weightsFrom100":"[33,33,34]","swapFeeBPS":"10","somethingRandomForSalt":"0XABCDEF"}}]}
+{
+  "version": "1.0",
+  "chainId": "42161",
+  "createdAt": 1681670295916,
+  "meta": {
+    "name": "Transactions Batch",
+    "description": "",
+    "txBuilderVersion": "1.13.3",
+    "createdFromSafeAddress": "0xd69F1FB046726034cdE6d282371d92548C62bbE4",
+    "createdFromOwnerAddress": "",
+    "checksum": "0xf707c4ae483a57ecedcccaba5d20e88f9794c812e56d1dc7eb4052cd40bd10f3"
+  },
+  "transactions": [
+    {
+      "to": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04",
+        "value": "1000000000000000000000000"
+      }
+    },
+    {
+      "to": "0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04",
+        "value": "10000000000000000000000"
+      }
+    },
+    {
+      "to": "0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "spender",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "approve",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "spender": "0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04",
+        "amount": "1000000000000000000000"
+      }
+    },
+    {
+      "to": "0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "internalType": "address[]",
+            "name": "tokens",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amplificationParameter",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address[]",
+            "name": "rateProviders_supports_empty_list_to_default",
+            "type": "address[]"
+          },
+          {
+            "internalType": "bool[]",
+            "name": "exemptFees_supports_empty_list_to_default",
+            "type": "bool[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "weiAmountsPerToken",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "swapFeeBPS",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "somethingRandomForSalt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "createAndJoinStableSwap",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "name": "Balancer MIM/FRAX/DAI stableswap",
+        "symbol": "b-s-MIM-FRAX-DAI",
+        "tokens": "[0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F, 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1, 0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A]",
+        "amplificationParameter": "40",
+        "rateProviders_supports_empty_list_to_default": "[]",
+        "exemptFees_supports_empty_list_to_default": "[]",
+        "weiAmountsPerToken": "[9000000000000000000, 9000000000000000000, 9000000000000000000]",
+        "swapFeeBPS": "10",
+        "somethingRandomForSalt": "0x123456"
+      }
+    },
+    {
+      "to": "0xa289a03f46f144fAaDd9Fc51b006d7322ECc9B04",
+      "value": "0",
+      "data": null,
+      "contractMethod": {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "internalType": "address[]",
+            "name": "tokens",
+            "type": "address[]"
+          },
+          {
+            "internalType": "address[]",
+            "name": "rateProviders_supports_empty_list_to_default",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "weiAmountsPerToken",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "weightsFrom100",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "swapFeeBPS",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "somethingRandomForSalt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "createAndJoinWeightedPool",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "name": "Balancer MIM33/FRAX33/DAI34",
+        "symbol": "b-MIM33-FRAX33-DAI34",
+        "tokens": "[0x17FC002b466eEc40DaE837Fc4bE5c67993ddBd6F, 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1, 0xFEa7a6a0B346362BF88A9e4A88416B77a57D6c2A]",
+        "rateProviders_supports_empty_list_to_default": "[]",
+        "weiAmountsPerToken": "[9000000000000000000, 9000000000000000000, 9000000000000000000]",
+        "weightsFrom100": "[33,33,34]",
+        "swapFeeBPS": "10",
+        "somethingRandomForSalt": "0XABCDEF"
+      }
+    }
+  ]
+}
