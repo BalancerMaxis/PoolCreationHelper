@@ -1,0 +1,4 @@
+git+https://github.com/Tritium-VLK/brownie@master
+git+https://github.com/BalancerMaxis/bal_addresses@0.2.2
+dotmap
+
