@@ -1,9 +1,7 @@
 import brownie
-from brownie import Contract, accounts
-import time
+from brownie import Contract
 import pytest
 import json
-from random import sample
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 def test_sortForStable(helper):
@@ -120,13 +118,13 @@ def test_ownable(helper, owner, caller,dai):
         helper.changeFactories(dai.address, dai.address, {"from": caller})
     helper.sweep(dai, owner, {"from": owner})
     tx = helper.changeFactories(dai.address, dai.address, {"from": owner})
-    assert len(tx.events) == 1;
+    assert len(tx.events) == 1
 
 def test_change_factory(helper, caller, whale):
     tx = helper.changeFactories(whale, whale, {"from": caller})
     assert len(tx.events) == 1
-    assert helper.weightedFactory() == whale;
-    assert helper.stableFactory() == whale;
+    assert helper.weightedFactory() == whale
+    assert helper.stableFactory() == whale
 
 
 
