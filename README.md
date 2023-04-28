@@ -2,6 +2,18 @@
 
 This helper contract makes it easier for you to create and init join a pool from etherscan or a multisig.  It hides a bunch of the funny math and odd mechanics.  
 
+## Deployed addresses
+
+### V2 Nonce 2
+Address: `0x93118d4853646a869732898cEa3bCF309e1607A6`
+Deployments:
+[mainnet](https://etherscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+[arbi](https://arbiscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+[matic](https://polygonscan.com/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+[gnosis](https://gnosisscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+[op](https://optimistic.etherscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+
+
 ## Prepairing your inputs
 The contract takes a bunch ordered lists which are rows in a table.  The lists must all be the same length, and the same index pertains to the same thing.
 
@@ -29,17 +41,6 @@ Given the example of a stableswap that pairs some coin, say GHO with a BPT, say 
 In this case, exempt fees can be set to true for this token/rate provider and fees will not be charged on the upwards rebasing of that token.  Note that any pool that wishs to receive a gauge is expected not to use exempt fees exempt for avoiding double taxation. 
 
 Exempt fees must be set to false for any token that does not have a rate provider (has ZeroAddress as rate provider). 
-
-## Deployed addresses
-
-### V2 Nonce 2
-Address: `0x93118d4853646a869732898cEa3bCF309e1607A6`
-Deployments:
-[mainnet](https://etherscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
-[arbi](https://arbiscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
-[matic](https://polygonscan.com/address/0x93118d4853646a869732898cea3bcf309e1607a6)
-[gnosis](https://gnosisscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
-[op](https://optimistic.etherscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
 
 
 ## Using from a multisig
