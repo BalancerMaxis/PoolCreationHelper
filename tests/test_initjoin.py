@@ -4,6 +4,7 @@ import time
 import pytest
 import json
 from random import sample
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 def test_sortForStable(helper):
     addresses = ["0xBA12222222228d8Ba445958a75a0704d566BF2C8", "0xc9aac768d6389d8e548087f1d42ee4ab0e413b5d", "0x3301Ee63Fb29F863f2333Bd4466acb46CD8323E6"]
@@ -38,7 +39,7 @@ def test_create_stableswap(stablePool):
 
 def test_weighted_init_join_unordered(helper, dai, usdc,usdt, weightedPool, caller, unordered_token_list):
     with brownie.reverts():
-        tx = helper.initJoinWeightedPool(weightedPool.getPoolId(), unordered_token_list, [1000000, 100000, 100000], {'from': caller})
+        tx = helper.initJoinWeightedPool(weightedPool.getPoolId(), weightedPool.address, unordered_token_list, [1000000, 100000, 100000], {'from': caller})
 
 
 def test_weighted_init_join(helper, dai, usdc, usdt, weightedPool, caller):
@@ -46,7 +47,7 @@ def test_weighted_init_join(helper, dai, usdc, usdt, weightedPool, caller):
     tokens = [usdc, usdt, dai]
     amounts = [10000000, 1000000, 1000]
     sortTokens, rateProviders, sortAmounts, weights = helper.sortForWeighted(tokens, [], amounts, [33,33,34])
-    tx = helper.initJoinWeightedPool(weightedPool.getPoolId(), sortTokens, sortAmounts, {'from': caller})
+    tx = helper.initJoinWeightedPool(weightedPool.getPoolId(), weightedPool.address, sortTokens, sortAmounts, {'from': caller})
     assert weightedPool.balanceOf(caller) > 0
     return tx
 
@@ -62,6 +63,17 @@ def test_stable_init_join(helper, dai, usdc, usdt, stablePool, caller):
     assert stablePool.balanceOf(caller) > 0
     return tx
 
+def test_with_composable_bpt(helper, dai, usdc, bpt3pool, caller):
+    tokens = [bpt3pool, usdc, dai]
+    amounts = [100000000, 1000, 1000]
+    exempt = [True, False, False]
+    rateProviders = [bpt3pool, ZERO_ADDRESS, ZERO_ADDRESS]
+    sortTokens, sortedRateProviders, exemptFees, sortAmounts = helper.sortForStable(tokens, rateProviders, exempt, amounts)
+    tx = helper.createStablePool("3pool test", "3pool-dai-usdc", sortTokens, 100, sortedRateProviders, exemptFees, 300, b"bpt test", {"from": caller})
+    poolAddress = tx.events["PoolCreated"]["pool"]
+    with open("abis/IComposibleStable.json", "r") as f:
+        pool = Contract.from_abi("IComposableStable", poolAddress, json.load(f))
+    helper.initJoinStableSwap(pool.getPoolId(), pool.address, sortTokens, sortAmounts)
 
 def test_create_and_join_weighted(helper, caller, unordered_token_list):
     ## approvals for usdt, usdc and dai in conftest

@@ -11,6 +11,9 @@ import "interfaces/balancer/pool-weighted/IWeightedPool.sol";
 import "interfaces/balancer/pool-stable/IComposableStablePool.sol";
 
 
+interface IPool {
+    function getPoolId() external view returns (bytes32);
+}
 
 /**
  * @title The MaxiPoolCreationHelperV1
@@ -56,7 +59,7 @@ contract PoolCreationHelper is Ownable {
      * @param amplificationParameter Also known as the A factor.  Defines how fast the pool slips when off balance.  Recommend <50 if you don't know what you are doing.
      * @param exemptFees_supports_empty_list_to_default Speak with the Maxis about how to use this if your pool includes other boosted BPTs.  Otherwise set to an empty list
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
-     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
+     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the helper.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
      * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc©©
      * @return The address of the created pool
@@ -92,7 +95,7 @@ contract PoolCreationHelper is Ownable {
      * @param tokens An list of token addresses in the pool in ascending order (from 0 to f) - check the read functions
      * @param weightsFrom100 A list of token weights in percentage points ordered by the token addresses above (adds up to 100)
      * @param rateProviders_supports_empty_list_to_default An ordered list of rateProviders using zero addresses where there is none, or an empty array [] to autofill zeros for all rate providers.
-     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
+     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the helper.
      * @param swapFeeBPS The swap fee expressed in basis points from 1 to 1000 (0.01 - 10%)
      * @param somethingRandomForSalt A salt for the create2 (if you don't know just put something random like 0x123abc
      * @return The address of the created pool
@@ -110,18 +113,20 @@ contract PoolCreationHelper is Ownable {
         address poolAddress = createWeightedPool(name, symbol, tokens, rateProviders_supports_empty_list_to_default,  weightsFrom100, swapFeeBPS, somethingRandomForSalt);
         IWeightedPool pool = IWeightedPool(poolAddress);
         bytes32 poolId = pool.getPoolId();
-        initJoinWeightedPool(poolId, tokens, weiAmountsPerToken);
+        initJoinWeightedPool(poolId, poolAddress, tokens, weiAmountsPerToken);
         return poolAddress;
     }
 
     /**
       * @notice Init Joins an empty pool to set the starting price
      * @param poolId the pool id of the pool to init join
+     * @param poolAddress The address of the pools BPT
      * @param tokenAddresses a list of all the tokens in the pool, sorted from lowest to highest (0 to F)
      * @param weiAmountsPerToken a list of amounts such that a matching index returns a token/amount pair
      */
     function initJoinWeightedPool(
         bytes32 poolId,
+        address poolAddress,
         address[] memory tokenAddresses,
         uint256[] memory weiAmountsPerToken
     ) public {
@@ -141,9 +146,13 @@ contract PoolCreationHelper is Ownable {
 
         // Call the joinPool function
         for (uint8 i=0; i < tokenAddresses.length; i++) {
-            IERC20 t = IERC20(tokenAddresses[i]);
-            SafeERC20.safeTransferFrom(t, msg.sender, address(this), weiAmountsPerToken[i]);
-            SafeERC20.safeApprove(t, address(vault), weiAmountsPerToken[i]);
+            if(tokenAddresses[i] != poolAddress) {
+                IERC20 t = IERC20(tokenAddresses[i]);
+                SafeERC20.safeTransferFrom(t, msg.sender, address(this), weiAmountsPerToken[i]);
+                if (t.allowance(address(this), address(vault)) < weiAmountsPerToken[i]) {
+                    SafeERC20.safeApprove(t, address(vault), weiAmountsPerToken[i]);
+                }
+            }
         }
         vault.joinPool(poolId, address(this), msg.sender, request);
     }
@@ -253,8 +262,8 @@ contract PoolCreationHelper is Ownable {
         /**
       * @notice Init Joins an empty pool to set the starting price
      * @param poolId the pool id of the pool to init join
-     * @param tokenAddresses a list of all the tokens in the pool, sorted from lowest to highest (0 to F) - You must also include the BPT token of the pool itself, can have amount 0
-     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the vault.
+     * @param tokenAddresses a list of all the tokens in the pool, sorted from lowest to highest (0 to F)
+     * @param weiAmountsPerToken An ordered list of amounts (wei denominated) of tokens for the initial deposit.  This will define opening prices. You  must have open approvals for each token to the helper.
      */
     function initJoinStableSwap(
         bytes32 poolId,
@@ -265,7 +274,8 @@ contract PoolCreationHelper is Ownable {
         require(tokenAddresses.length == weiAmountsPerToken.length, "Arrays of different length");
         /// TODO consider a check around balanced deposits
         bool foundOwnToken;
-
+        // Composable pools include their own token as a phantom token.  On initjoin these tokens must be created, 2*111 is a min amount advised by blabs
+        //  The own pool token is minted on initjoin not transferred from the caller.
         for(uint8 i=0; i<tokenAddresses.length; i++){
             if (tokenAddresses[i] == poolAddress){
                 weiAmountsPerToken[i] = 2**111;
@@ -296,12 +306,14 @@ contract PoolCreationHelper is Ownable {
             if(tokenAddresses[i] != poolAddress) {
                 IERC20 t = IERC20(tokenAddresses[i]);
                 SafeERC20.safeTransferFrom(t, msg.sender, address(this), weiAmountsPerToken[i]);
-                SafeERC20.safeApprove(t, address(vault), weiAmountsPerToken[i]);
+                if (t.allowance(address(this), address(vault)) < weiAmountsPerToken[i]) {
+                    SafeERC20.safeApprove(t, address(vault), weiAmountsPerToken[i]);
+                }
             }
         }
         vault.joinPool(poolId, address(this), msg.sender, request);
-    }
 
+    }
 
     /// Admin Functions
           /**
