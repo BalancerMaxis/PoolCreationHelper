@@ -40,3 +40,13 @@ Deployments:
 [matic](https://polygonscan.com/address/0x93118d4853646a869732898cea3bcf309e1607a6)
 [gnosis](https://gnosisscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
 [op](https://optimistic.etherscan.io/address/0x93118d4853646a869732898cea3bcf309e1607a6)
+
+
+## Using from a multisig
+
+You can find an example [multisig payload](./multisg-payloads/arbitrum-dai-mim-frax-stable-and-weighted-pool-9-dollars-each-token.json) by clicking on it.
+
+This payload includes 2 transactions to join a dai-min-frax pool.  1 is stableswap, one is weighted.
+
+You can edit this file, remove the type you don't want, update the inputs and then load it into transaciton builder to simulate and then execute a pool creation.
+
