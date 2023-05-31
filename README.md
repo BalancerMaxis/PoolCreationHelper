@@ -38,7 +38,7 @@ You can pass [] in the rate providers array to have no rate providers for any to
 
 ### Exempt Fees
 Given the example of a stableswap that pairs some coin, say GHO with a BPT, say Balancer 3 Pool, a rate provider is required to capture the increase in USD value that the pool token receives from fee capture.  In this case, fees are taken on this value, but the fees were already paid by the underlying pool.  
-In this case, exempt fees can be set to true for this token/rate provider and fees will not be charged on the upwards rebasing of that token.  Note that any pool that wishs to receive a gauge is expected not to use exempt fees exempt for avoiding double taxation. 
+In this case, exempt fees can be set to true for this token/rate provider and fees will not be charged on the upwards rebasing of that token.  Note that any pool that wishs to receive a gauge is expected  to use exemptFees for avoiding double taxation. 
 
 Exempt fees must be set to false for any token that does not have a rate provider (has ZeroAddress as rate provider). 
 
